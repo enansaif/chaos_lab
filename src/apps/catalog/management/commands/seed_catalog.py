@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 
 from apps.catalog.models import Product
+from apps.orders.models import Order, OrderItem
 
 
 CATEGORIES = ["electronics", "books", "clothing", "home", "sports"]
@@ -28,8 +29,14 @@ class Command(BaseCommand):
         count = options["count"] or settings.SEED_PRODUCT_COUNT
 
         if options["flush"]:
-            deleted, _ = Product.objects.all().delete()
-            self.stdout.write(f"Deleted {deleted} existing products.")
+            order_count = Order.objects.count()
+            item_count = OrderItem.objects.count()
+            Order.objects.all().delete()
+            self.stdout.write(
+                f"Deleted {order_count} orders and {item_count} order items."
+            )
+            product_deleted, _ = Product.objects.all().delete()
+            self.stdout.write(f"Deleted {product_deleted} existing products.")
 
         existing = Product.objects.count()
         if existing >= count:
@@ -41,7 +48,6 @@ class Command(BaseCommand):
             )
             return
 
-        to_create = count - existing
         batch_size = 1000
         products = []
 

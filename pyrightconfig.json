@@ -1,0 +1,15 @@
+{
+  "include": ["src"],
+  "exclude": ["**/__pycache__", ".venv"],
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.13",
+  "typeCheckingMode": "basic",
+  "executionEnvironments": [
+    {
+      "root": "src",
+      "extraPaths": ["."]
+    }
+  ],
+  "reportMissingModuleSource": false
+}
