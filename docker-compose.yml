@@ -148,6 +148,8 @@ services:
       context: .
       dockerfile: docker/Dockerfile
     env_file: .env
+    volumes:
+      - ./src:/app
     environment:
       SERVICE_ROLE: api
       OTEL_ENABLED: ${OTEL_ENABLED:-true}
@@ -176,6 +178,8 @@ services:
       context: .
       dockerfile: docker/Dockerfile
     env_file: .env
+    volumes:
+      - ./src:/app
     environment:
       SERVICE_ROLE: worker
       OTEL_ENABLED: ${OTEL_ENABLED:-true}
@@ -200,6 +204,8 @@ services:
       context: .
       dockerfile: docker/Dockerfile
     env_file: .env
+    volumes:
+      - ./src:/app
     environment:
       SERVICE_ROLE: beat
       OTEL_ENABLED: ${OTEL_ENABLED:-true}

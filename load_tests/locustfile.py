@@ -4,8 +4,13 @@ import random
 from locust import HttpUser, between, task
 
 
-def random_product_ids(count=3, max_id=1000):
-    return [random.randint(1, max_id) for _ in range(count)]
+def product_id_max():
+    return int(os.getenv("SEED_PRODUCT_COUNT", "10000"))
+
+
+def random_product_ids(count=3, max_id=None):
+    upper = max_id if max_id is not None else product_id_max()
+    return [random.randint(1, upper) for _ in range(count)]
 
 
 def order_payload(product_ids=None):
@@ -33,7 +38,7 @@ class CatalogReader(HttpUser):
 
     @task(1)
     def product_detail(self):
-        product_id = random.randint(1, int(os.getenv("SEED_PRODUCT_COUNT", "10000")))
+        product_id = random.randint(1, product_id_max())
         self.client.get(f"/api/v1/catalog/products/{product_id}/", name="/catalog/products/{id}/")
 
 

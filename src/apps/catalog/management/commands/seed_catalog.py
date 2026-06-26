@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand
+from django.db import connection
 
 from apps.catalog.models import Product
 from apps.orders.models import Order, OrderItem
@@ -9,6 +10,14 @@ CATEGORIES = ["electronics", "books", "clothing", "home", "sports"]
 
 class Command(BaseCommand):
     help = "Seed catalog with sample products for load testing"
+
+    def _truncate_catalog_and_orders(self):
+        tables = ", ".join(
+            connection.ops.quote_name(model._meta.db_table)
+            for model in (OrderItem, Order, Product)
+        )
+        with connection.cursor() as cursor:
+            cursor.execute(f"TRUNCATE TABLE {tables} RESTART IDENTITY CASCADE")
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -30,13 +39,12 @@ class Command(BaseCommand):
 
         if options["flush"]:
             order_count = Order.objects.count()
-            item_count = OrderItem.objects.count()
-            Order.objects.all().delete()
+            product_count = Product.objects.count()
+            self._truncate_catalog_and_orders()
             self.stdout.write(
-                f"Deleted {order_count} orders and {item_count} order items."
+                f"Truncated {product_count} products, {order_count} orders, "
+                "and reset primary key sequences."
             )
-            product_deleted, _ = Product.objects.all().delete()
-            self.stdout.write(f"Deleted {product_deleted} existing products.")
 
         existing = Product.objects.count()
         if existing >= count:

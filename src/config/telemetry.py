@@ -16,6 +16,8 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.trace.sampling import ParentBasedTraceIdRatio
 
 _initialized = False
+_meter_provider = None
+_tracer_provider = None
 
 
 def _env_bool(name: str, default: bool = True) -> bool:
@@ -26,8 +28,12 @@ def _env_bool(name: str, default: bool = True) -> bool:
 def init_telemetry(
     service_name: str | None = None, *, instrument_django: bool = False
 ) -> None:
-    global _initialized
+    global _initialized, _meter_provider, _tracer_provider
     if _initialized:
+        return
+
+    settings_module = os.environ.get("DJANGO_SETTINGS_MODULE", "")
+    if settings_module in {"config.test_settings", "config.settings.test"}:
         return
 
     if not _env_bool("OTEL_ENABLED", True):
@@ -54,6 +60,7 @@ def init_telemetry(
         BatchSpanProcessor(OTLPSpanExporter(endpoint=endpoint, insecure=True))
     )
     trace.set_tracer_provider(tracer_provider)
+    _tracer_provider = tracer_provider
 
     metric_reader = PeriodicExportingMetricReader(
         OTLPMetricExporter(endpoint=endpoint, insecure=True),
@@ -61,6 +68,7 @@ def init_telemetry(
     )
     meter_provider = MeterProvider(resource=resource, metric_readers=[metric_reader])
     metrics.set_meter_provider(meter_provider)
+    _meter_provider = meter_provider
 
     if instrument_django:
         DjangoInstrumentor().instrument(is_sqlcommenter_enabled=True)
@@ -71,6 +79,22 @@ def init_telemetry(
     LoggingInstrumentor().instrument(set_logging_format=True)
 
     _initialized = True
+
+
+def shutdown_telemetry() -> None:
+    global _initialized, _meter_provider, _tracer_provider
+    if not _initialized:
+        return
+
+    if _meter_provider is not None:
+        _meter_provider.shutdown()
+        _meter_provider = None
+
+    if _tracer_provider is not None:
+        _tracer_provider.shutdown()
+        _tracer_provider = None
+
+    _initialized = False
 
 
 def get_trace_context() -> dict[str, str]:

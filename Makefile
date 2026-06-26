@@ -1,5 +1,5 @@
 .PHONY: up down build logs seed cache-on cache-off broker-redis broker-rabbitmq \
-        load-read load-write load-async load-mixed load-headless load-docker shell migrate \
+        load-read load-write load-async load-mixed load-headless load-docker shell migrate test \
         config health otel-on otel-off grafana prometheus obs-logs
 
 COMPOSE = docker compose
@@ -25,6 +25,18 @@ seed:
 
 migrate:
 	$(COMPOSE) exec api python manage.py migrate
+
+test:
+	cd src && OTEL_ENABLED=false ../.venv/bin/python -m pytest -v
+
+test-docker:
+	$(COMPOSE) exec \
+		-e DJANGO_SETTINGS_MODULE=config.test_settings \
+		-e OTEL_ENABLED=false \
+		-e CELERY_BROKER_URL=memory:// \
+		-e CELERY_RESULT_BACKEND=cache+memory:// \
+		-e CELERY_BROKER_BACKEND=memory \
+		api pytest -v
 
 shell:
 	$(COMPOSE) exec api python manage.py shell
@@ -78,26 +90,29 @@ obs-logs:
 	@echo '  {service="worker"} |= "succeeded"'
 	@echo '  {service="api"} | json | trace_id != ""'
 
+LOCUST = .venv/bin/locust
 LOCUST_HOST ?= http://localhost
 LOCUST_USERS ?= $(shell grep '^LOCUST_USERS=' $(ENV_FILE) 2>/dev/null | cut -d= -f2- | tr -d ' ' || echo 50)
 LOCUST_SPAWN_RATE ?= $(shell grep '^LOCUST_SPAWN_RATE=' $(ENV_FILE) 2>/dev/null | cut -d= -f2- | tr -d ' ' || echo 10)
 LOCUST_RUN_TIME ?= $(shell grep '^LOCUST_RUN_TIME=' $(ENV_FILE) 2>/dev/null | cut -d= -f2- | tr -d ' ' || echo 5m)
+SEED_PRODUCT_COUNT ?= $(shell grep '^SEED_PRODUCT_COUNT=' $(ENV_FILE) 2>/dev/null | cut -d= -f2- | tr -d ' ' || echo 10000)
+LOCUST_ENV = SEED_PRODUCT_COUNT=$(SEED_PRODUCT_COUNT)
 
 load-read:
-	locust -f load_tests/locustfile.py --host $(LOCUST_HOST) CatalogReader
+	$(LOCUST_ENV) $(LOCUST) -f load_tests/locustfile.py --host $(LOCUST_HOST) CatalogReader
 
 load-write:
-	locust -f load_tests/locustfile.py --host $(LOCUST_HOST) OrderWriter
+	$(LOCUST_ENV) $(LOCUST) -f load_tests/locustfile.py --host $(LOCUST_HOST) OrderWriter
 
 load-async:
-	locust -f load_tests/locustfile.py --host $(LOCUST_HOST) AsyncOrderWriter
+	$(LOCUST_ENV) $(LOCUST) -f load_tests/locustfile.py --host $(LOCUST_HOST) AsyncOrderWriter
 
 load-mixed:
-	locust -f load_tests/locustfile.py --host $(LOCUST_HOST) MixedTraffic
+	$(LOCUST_ENV) $(LOCUST) -f load_tests/locustfile.py --host $(LOCUST_HOST) MixedTraffic
 
 load-headless:
 	mkdir -p reports
-	locust -f load_tests/locustfile.py --host $(LOCUST_HOST) MixedTraffic \
+	$(LOCUST_ENV) $(LOCUST) -f load_tests/locustfile.py --host $(LOCUST_HOST) MixedTraffic \
 		--headless -u $(LOCUST_USERS) -r $(LOCUST_SPAWN_RATE) \
 		--run-time $(LOCUST_RUN_TIME) \
 		--html reports/load-report.html
