@@ -29,6 +29,7 @@ Open API docs at http://localhost/api/docs/
 | Loki + Alloy | Centralized container logs |
 | Tempo | Trace storage |
 | Prometheus | Metrics storage |
+| postgres_exporter | Postgres index and query stats |
 | Grafana | Dashboards and Explore UI |
 
 See [OBSERVABILITY.md](OBSERVABILITY.md) for logs, traces, and metrics guide.
@@ -63,6 +64,10 @@ make load-write      # Locust write-heavy traffic
 make load-mixed      # Locust mixed traffic
 make load-headless   # Headless load test with HTML report
 make grafana         # Print Grafana URL
+make db-explain      # EXPLAIN lab ORM queries (Postgres)
+make db-index-list   # Index registry and toggle groups
+make db-index-experiment-off  # Drop category indexes for Experiment 11
+make db-index-stats  # Index vs sequential scan stats
 make otel-on         # Enable OpenTelemetry
 make otel-off        # Disable OpenTelemetry
 ```

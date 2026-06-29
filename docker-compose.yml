@@ -1,17 +1,40 @@
 services:
   postgres:
     image: postgres:16-alpine
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.track=all
+      - -c
+      - pg_stat_statements.max=10000
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-loadlab}
       POSTGRES_USER: ${POSTGRES_USER:-loadlab}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-loadlab}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-loadlab} -d ${POSTGRES_DB:-loadlab}"]
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - loadlab
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.16.0
+    environment:
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-loadlab}:${POSTGRES_PASSWORD:-loadlab}@postgres:5432/${POSTGRES_DB:-loadlab}?sslmode=disable
+    command:
+      - --extend.query-path=/etc/postgres-exporter/queries.yaml
+    volumes:
+      - ./observability/postgres-exporter-queries.yaml:/etc/postgres-exporter/queries.yaml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - loadlab
 

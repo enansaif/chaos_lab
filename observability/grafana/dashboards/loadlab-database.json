@@ -1,0 +1,108 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "id": 1,
+      "title": "Index Scans / sec by Index",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "rate(pg_stat_user_indexes_idx_scan{datname=\"loadlab\"}[1m])",
+          "legendFormat": "{{schemaname}}.{{relname}}.{{indexrelname}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "id": 2,
+      "title": "Sequential Scans / sec by Table",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "rate(pg_stat_user_tables_seq_scan{datname=\"loadlab\"}[1m])",
+          "legendFormat": "{{schemaname}}.{{relname}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "id": 3,
+      "title": "Table Index Scans / sec",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "rate(pg_stat_user_tables_idx_scan{datname=\"loadlab\"}[1m])",
+          "legendFormat": "{{schemaname}}.{{relname}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "fieldConfig": {"defaults": {"unit": "ms"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "id": 4,
+      "title": "Top Query Mean Execution Time (pg_stat_statements)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "topk(10, pg_stat_statements_mean_exec_time)",
+          "legendFormat": "{{query}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+      "id": 5,
+      "title": "Query Calls / sec (pg_stat_statements)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "topk(10, rate(pg_stat_statements_calls[1m]))",
+          "legendFormat": "{{query}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+      "id": 6,
+      "title": "Index Scan Count (total)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "pg_stat_user_indexes_idx_scan{datname=\"loadlab\"}",
+          "legendFormat": "{{schemaname}}.{{relname}}.{{indexrelname}}",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "tags": ["loadlab", "database"],
+  "templating": {"list": []},
+  "time": {"from": "now-15m", "to": "now"},
+  "title": "LoadLab Database",
+  "uid": "loadlab-database",
+  "version": 1
+}

@@ -1,0 +1,33 @@
+pg_stat_statements:
+  query: |
+    SELECT
+      queryid::text AS queryid,
+      LEFT(query, 120) AS query,
+      calls,
+      total_exec_time,
+      mean_exec_time,
+      rows
+    FROM pg_stat_statements
+    WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
+    ORDER BY mean_exec_time DESC
+    LIMIT 50
+  master: true
+  metrics:
+    - queryid:
+        usage: "LABEL"
+        description: "Query identifier"
+    - query:
+        usage: "LABEL"
+        description: "Truncated query text"
+    - calls:
+        usage: "COUNTER"
+        description: "Number of times executed"
+    - total_exec_time:
+        usage: "COUNTER"
+        description: "Total execution time in milliseconds"
+    - mean_exec_time:
+        usage: "GAUGE"
+        description: "Mean execution time in milliseconds"
+    - rows:
+        usage: "COUNTER"
+        description: "Total rows retrieved or affected"

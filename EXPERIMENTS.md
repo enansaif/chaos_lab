@@ -196,6 +196,64 @@ make load-read  # same test
 
 ---
 
+## Experiment 11: Database index impact
+
+**Goal:** Observe how indexes affect query plans, scan rates, and read latency.
+
+**Prerequisites:** If Postgres was created before `pg_stat_statements` support was added, restart Postgres and enable the extension once:
+
+```bash
+docker compose up -d postgres
+make db-init-stats
+```
+
+```bash
+make cache-off
+make db-reset-stats
+make db-explain          # baseline — note Index Scan on category_list
+make grafana             # open LoadLab → LoadLab Database dashboard
+```
+
+Drop category indexes for comparison (composite + single-column category):
+
+```bash
+make db-index-list           # see registry, groups, and live index names
+make db-index-experiment-off # drops category-read group with verification
+make db-explain              # expect Seq Scan on category_list
+make load-read               # watch sequential scan rate rise in Grafana
+```
+
+Restore indexes (uses saved indexdef or registry DDL — not migrate):
+
+```bash
+make db-index-experiment-on
+make db-explain
+make load-read
+```
+
+Single-index toggle:
+
+```bash
+make db-drop-index INDEX=catalog_pro_categor_da8cc9_idx
+make db-add-index INDEX=catalog_pro_categor_da8cc9_idx
+```
+
+**CLI helpers:**
+
+| Command | Purpose |
+|---------|---------|
+| `make db-explain` | EXPLAIN (ANALYZE, BUFFERS) for lab query scenarios |
+| `make db-indexes` | List indexes on catalog/orders tables |
+| `make db-index-list` | Registry, groups, saved DDL, and live indexes |
+| `make db-drop-index` / `make db-add-index` | Toggle one index with verification |
+| `make db-index-experiment-off` / `-on` | Toggle category-read index group |
+| `make db-index-stats` | pg_stat_user_indexes vs table seq_scan counts |
+| `make db-reset-stats` | Reset pg_stat counters between runs |
+
+**Compare:** `make db-explain` scan type (Seq vs Index) + Grafana Database dashboard seq_scan rate + Locust p95 with cache off.
+
+---
+
 ## Metrics cheat sheet
 
 | Source | What to watch |
@@ -207,7 +265,11 @@ make load-read  # same test
 | `/api/v1/system/config/` | Effective toggles during test |
 | RabbitMQ UI (:15672) | Queue depth, publish/deliver rates |
 | Grafana (:3000) | Dashboards, Loki logs, Tempo traces, Prom metrics |
+| Grafana → LoadLab Database | Index scans, seq scans, pg_stat_statements |
 | Prometheus (:9090) | Raw OTel-derived metrics |
+| `make db-explain` | EXPLAIN plans for lab ORM queries |
+| `make db-index-list` | Toggleable index registry and live Postgres indexes |
+| `make db-index-experiment-off` / `-on` | Drop/restore category-read index group |
 
 ---
 
@@ -220,5 +282,6 @@ make load-read  # same test
 5. Failure modes (Experiment 5)
 6. Edge protection (Experiment 7)
 7. Grafana observability (Experiment 10)
+8. Database indexes (Experiment 11)
 
 After mastering these, consider splitting `catalog` and `orders` into separate microservice containers as a follow-up exercise.

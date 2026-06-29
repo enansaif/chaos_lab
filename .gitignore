@@ -18,6 +18,7 @@ htmlcov/
 coverage.xml
 *.log
 reports/
+scripts/.lab_index_state/
 *.html
 .DS_Store
 .idea/
